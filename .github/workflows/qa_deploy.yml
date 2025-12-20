@@ -67,15 +67,15 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME}}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: Deployment Succesful - Ready for QA testing 
+          to: sajid.ali@giki.edu.pk
+          from: Github Actions
           body: |
             Hello QA, 
           
             The app is deployed succesfully. Changes are available for evaluation
             Branch: ${{ github.head_ref || 'main' }}
             Access the app here: http://${{ secrets.TESTING_INSTANCE_IP }}
-          to: sajid.ali@giki.edu.pk
-          from: Github Actions
-
+         
     
 
 
