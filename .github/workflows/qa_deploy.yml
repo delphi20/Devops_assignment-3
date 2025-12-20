@@ -57,7 +57,9 @@ jobs:
             npm install
             npm run build
             pm2 restart all 
-      
+     
+
+      # may need more work 
       - name: Send Email to QA 
         if: success()
         uses: dawid66/action-send-mail@v3
