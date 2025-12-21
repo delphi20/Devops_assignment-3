@@ -1,0 +1,100 @@
+name: Deploy for Staging
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Dependencies
+        run: npm install
+
+      # IMPORTANT: do NOT swallow failures
+      - name: Run Linting
+        run: npm run lint
+
+      - name: Run Unit Tests
+        run: |
+          npm run test-react
+          npm run test-API
+          npm test
+
+  deploy-to-staging:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: SSH to AWS Staging Server and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/Devops_assignment-3
+            git fetch origin
+            git checkout main
+            git pull origin main
+
+            npm install
+            npm run build
+
+            pm2 restart "staging-app" || pm2 start npm --name "staging-app" -- start
+            pm2 save
+
+      - name: Email QA (success)
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Staging Deployment Successful (main)"
+          to: ${{ secrets.QA_EMAIL }}
+          from: "GitHub Actions"
+          body: |
+            Staging deployment SUCCESS ✅
+
+            Repo: ${{ github.repository }}
+            Branch: main
+            Commit: ${{ github.sha }}
+            Trigger: ${{ github.event_name }}
+
+            Access URL:
+            http://${{ secrets.STAGING_INSTANCE_IP }}
+
+      - name: Email QA + Dev (failure)
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Staging Deployment FAILED (main)"
+          to: "${{ secrets.QA_EMAIL }},${{ secrets.DEV_EMAIL }}"
+          from: "GitHub Actions"
+          body: |
+            Staging deployment FAILED ❌
+
+            Repo: ${{ github.repository }}
+            Branch: main
+            Commit: ${{ github.sha }}
+            Trigger: ${{ github.event_name }}
+
+            Check the Actions logs for details:
+            Actions → Deploy for Staging → build-and-test / deploy-to-staging
