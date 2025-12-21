@@ -62,7 +62,7 @@ jobs:
       # may need more work 
       - name: Send Email to QA 
         if: success()
-        uses: dawid66/action-send-mail@v3
+        uses: dawidd66/action-send-mail@v3
         with: 
           server_address: smtp.gmail.com
           server_port: 465
