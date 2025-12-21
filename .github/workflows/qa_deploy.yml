@@ -59,8 +59,8 @@ jobs:
             pm2 restart all 
      
 
-      # may need more work 
-      - name: Send Email to QA 
+      
+      - name: Send Email to QA on success 
         if: success()
         uses: dawidd66/action-send-mail@v3
         with: 
@@ -68,17 +68,31 @@ jobs:
           server_port: 465
           username: ${{ secrets.EMAIL_USERNAME}}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: Deployment Succesful - Ready for QA testing 
-          to: sajid.ali@giki.edu.pk
-          from: Github Actions
+          subject: "Deployment Succesful: Branch ${{ github.head_ref }}"  
+          to: msajidaligiki@gmail.com
+          from: Github Actions 2022477+2022623
           body: |
             Hello QA, 
           
-            The app is deployed succesfully. Changes are available for evaluation
+            The app is deployed succesfully with changes from branch [${{ github.head_ref }}]. Changes are available for evaluation
             Branch: ${{ github.head_ref || 'main' }}
             Access the app here: http://${{ secrets.TESTING_INSTANCE_IP }}
          
-    
+      - name: Send Email to Relevant on Failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with: 
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME}}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "QA Deployment FAILED: Branch ${{ github.head_ref }}"
+          to: msajidaligiki@gmail.com, ${{ github.actor }}@users.noreply.github.com
+          from: Github Actions 2022477+2022623
+          body: | 
+            Hello, 
 
-
-
+            The QA deployment for branch [${{ github.head_ref }}] has FAILED. 
+            Details:
+            - Initiated by $${{ github.actor }}
+            - View Error Logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} # resolve to link for actions run
